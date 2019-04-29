@@ -5,8 +5,12 @@
 % displayed. Then, an example cross validation is plotted for each finger
 % with the red line separating training data from testing data. 
 
-%load('preprocessed_data.mat')
-X = x_train{1}; Y = y_train{1};
+sub = 1; 
+%load('preprocessed_data_edit.mat')
+X = x_train{sub}; Y = y_train{sub};
+
+addpath(genpath('C:\Users\Toren\Desktop\BE521final\libsvmmatlab'))
+savepath
 
 MLfunc = @(xtr,ytr,xte) lassofunc(xtr,ytr,xte);
 
@@ -37,4 +41,12 @@ function Ypred = lassofunc(xtrain, ytrain, xtest)
         coef0 = FitInfo.Intercept;
         Ypred=xtest*W(:)+coef0;
         
+end
+
+function Ypred = SVMfunc(Xtrain, Ytrain, Xtest)
+
+    mySVM = svmtrain(Ytrain, Xtrain); 
+    Ypred = svmpredict(zeros(length(Xtest(:,1)), length(Ytrain(1,:))),...
+        Xtest, mySVM);
+    
 end

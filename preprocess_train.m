@@ -1,4 +1,4 @@
-load('project_data.mat');
+load('project_data_edit.mat');
 
 %% window features (train)
 
@@ -42,7 +42,8 @@ for sub=1:3
     for finger=1:5
         %plot(train_dg_raw(:,finger),'.')
         %y=train_dg_raw(50*(0:length(y)-1)+1,finger);
-y=decimate(train_dg_raw(:,finger),50);  %filter?
+%y=decimate(train_dg_raw(:,finger),50);  %filter?
+y=decimate( movmean(train_dg_raw(:,finger), 100), 50);
          
     % x=50*(0:length(y)-1);
         y_sub(:,finger)=y(previewsWindow+1:end); % predict fourth window using 1 2 and 3 windows

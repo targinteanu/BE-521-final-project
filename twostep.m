@@ -5,23 +5,34 @@
 % displayed. Then, an example cross validation is plotted for each finger
 % with the red line separating training data from testing data. 
 
-KNNfunc = @(Xtrain, Ytrain, Xtest) knnclassify(Xtest, Xtrain, Ytrain, 5);
+KNNfunc = @(Xtrain, Ytrain, Xtest) knnclassify(Xtest, Xtrain, Ytrain, 20);
 
-MLfunc = @(xtr,ytr,xte) logregfunc(xtr,ytr,xte);
+MLfunc = @(xtr,ytr,xte) SVMfunc(xtr,ytr,xte);
 
-%%{
+sub = 1;
+Y = train_dg{sub};
+Ymm = movmean(Y, ceil(length(Y)/100));
+Yactive = Ymm > .1; 
+Y0 = Y; Y1 = double(Yactive) + 1;
+
+X = mu;
+ds = 100;
+X = X(1:ds:end,:); Y = Y1(1:ds:end,:);
+
+% normalize X
+X = X - mean(X, 2); X = X./std(X, [], 2);
+%Y = Y - mean(Y, 2); Y = Y./std(Y, [], 2);
+
+%{
 sub = 1;
 load('preprocessed_data.mat')
 %load('project_data.mat')
 %X = train_ecog{1}; Y = train_dg{1};
 X = x_train{sub}; Y = y_train{sub};
 
-Ymm = movmean(Y, ceil(length(Y)/100));
-Yactive = Ymm > .1;
-Y0 = Y; Y = double(Yactive) + 1;
-
 [C,S,~,~,pe] = pca(X);
 X0 = X; X = S(:,1:100);
+%}
 
 addpath(genpath('C:\Users\Toren\Desktop\BE521final\libsvmmatlab'))
 savepath
@@ -34,7 +45,7 @@ crossvalrho = arrayfun(@(f) mean(...
 toc
 %}
 
-nTR = floor(length(Y(:,1))*.1);
+nTR = floor(length(Y(:,1))*.5);
 YTR = Y(1:nTR,:); YTE = Y((nTR+1):end,:);
 XTR = X(1:nTR,:); XTE = X((nTR+1):end,:);
 Ytrainpred = zeros(size(YTR)); Ytestpred = zeros(size(YTE));
@@ -46,7 +57,9 @@ for f = 1:5
     plot(Y(:,f), 'k'); hold on; plot([Ytrainpred(:,f); Ytestpred(:,f)], '--b');
     plot([nTR nTR], [min(Y(:)) max(Y(:))], 'r');
     grid on; 
-    title(['avg. \rho from crossval = ' num2str(crossvalrho(f))]);
+    acc = sum(Ytestpred(:,f) == YTE(:,f))/length(YTE(:,f));
+    title(['test acc. = ' num2str(acc) ' | crossval ' num2str(crossvalrho(f))]);
+    ylim([.5 2.5]);
 end
 linkaxes(ax); clear ax;
 
@@ -60,9 +73,31 @@ end
 
 function Ypred = SVMfunc(Xtrain, Ytrain, Xtest)
 
+% balance class sizes in training set
+class = [1, 2];
+classidx = cell(size(class)); classcount = zeros(size(class));
+for i = 1:length(class)
+    classidx{i} = find(Ytrain == class(i));
+    classcount(i) = length(classidx{i});
+end
+cutoff = min(classcount); 
+Xtr = zeros(cutoff, length(Xtrain(1,:))); Ytr = zeros(cutoff, 1);
+for i = 1:length(class)
+    idx = classidx{i}(1:cutoff);
+    pos = ((i-1)*cutoff+1);
+    Xtr(pos:(pos+cutoff-1),:) = Xtrain(idx,:);
+    Ytr(pos:(pos+cutoff-1)) = Ytrain(idx);
+end
+
+    %%{
+    mySVM = fitcsvm(Xtr, Ytr, 'KernelFunction', 'gaussian');
+    Ypred = mySVM.predict(Xtest);
+    %}
+    %{
     mySVM = svmtrain(Ytrain, Xtrain); 
     Ypred = svmpredict(zeros(length(Xtest(:,1)), length(Ytrain(1,:))),...
         Xtest, mySVM);
+    %}
     
 end
 

@@ -7,7 +7,7 @@
 
 KNNfunc = @(Xtrain, Ytrain, Xtest) knnclassify(Xtest, Xtrain, Ytrain, 20);
 
-MLfunc = @(xtr,ytr,xte) logregfunc(xtr,ytr,xte);
+MLfunc = @(xtr,ytr,xte) SVMfunc(xtr,ytr,xte);
 
 sub = 1;
 Y = train_dg{sub};
@@ -27,9 +27,12 @@ Y = Y(trim:end,:);
 % normalize X
 %X = X - mean(X, 2); X = X./std(X, [], 2);
 %Y = Y - mean(Y, 2); Y = Y./std(Y, [], 2);
+%{
 X = X - mean(X); 
 Ctrim = C(:,1:50);
 X = X*Ctrim;
+%}
+X = tsne(X);
 
 %{
 sub = 1;
@@ -59,12 +62,15 @@ XTR = X(1:nTR,:); XTE = X((nTR+1):end,:);
 Ytrainpred = zeros(size(YTR)); Ytestpred = zeros(size(YTE));
 figure; clear ax;
 for f = 1:5
-    [Ytrainpred(:,f), trainprob] = MLfunc(XTR, YTR(:,f), XTR);
-    [Ytestpred(:,f), testprob] = MLfunc(XTR, YTR(:,f), XTE);
+    %[Ytrainpred(:,f), trainprob] = MLfunc(XTR, YTR(:,f), XTR);
+    %[Ytestpred(:,f), testprob] = MLfunc(XTR, YTR(:,f), XTE);
+    Ytrainpred(:,f) = MLfunc(XTR, YTR(:,f), XTR);
+    Ytestpred(:,f) = MLfunc(XTR, YTR(:,f), XTE);
+    
     ax(f) = subplot(5,1,f);
     plot(Y(:,f), 'k'); hold on; 
-    %plot([Ytrainpred(:,f); Ytestpred(:,f)], '.b');
-    plot([trainprob; testprob], '--b');
+    plot([Ytrainpred(:,f); Ytestpred(:,f)], '.b');
+    %plot([trainprob; testprob], '--b');
     plot([nTR nTR], [min(Y(:)) max(Y(:))], 'r');
     grid on; 
     testacc = sum(Ytestpred(:,f) == YTE(:,f))/length(YTE(:,f));
@@ -116,6 +122,22 @@ end
 end
 
 function [Ypred, prob] = logregfunc(Xtrain, Ytrain, Xtest)
+
+% balance class sizes in training set
+class = [1, 2];
+classidx = cell(size(class)); classcount = zeros(size(class));
+for i = 1:length(class)
+    classidx{i} = find(Ytrain == class(i));
+    classcount(i) = length(classidx{i});
+end
+cutoff = min(classcount); 
+Xtr = zeros(cutoff, length(Xtrain(1,:))); Ytr = zeros(cutoff, 1);
+for i = 1:length(class)
+    idx = classidx{i}(1:cutoff);
+    pos = ((i-1)*cutoff+1);
+    Xtr(pos:(pos+cutoff-1),:) = Xtrain(idx,:);
+    Ytr(pos:(pos+cutoff-1)) = Ytrain(idx);
+end
 
     logreg = mnrfit(Xtrain, Ytrain);
     testProb = mnrval(logreg, Xtest);

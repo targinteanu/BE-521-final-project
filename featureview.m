@@ -31,7 +31,7 @@ mu_raw = filter(Hbp, X);
 
 %%
 MU = mu_raw;
-winsize = 100; % ms
+winsize = 1000; % ms
 windisp = 100; % ms
 numwins = 10;
 MU = sqrt(movmean(MU.^2, winsize));
@@ -45,7 +45,7 @@ end
 MU = MU3;
 
 %%
-sub = 1;
+fing = 2;
 Y = train_dg{sub};
 Ymm = movmean(Y, ceil(length(Y)/100));
 Yactive = Ymm > .1; 
@@ -67,14 +67,16 @@ X = X - mean(X);
 
 %[C,S,~,~,pe] = pca(X); figure; plot(pe)
 
-onIdx = Y(:,1) == 2; offIdx = Y(:,1) == 1;
+onIdx = Y(:,fing) == 2; offIdx = Y(:,fing) == 1;
 %Son = S(onIdx,:); Soff = S(offIdx,:);
 Xon = X(onIdx,:); Xoff = X(offIdx,:);
 
+%{
 cols = [121, 261, 331];
 figure; plot3(Xon(:,cols(1)), Xon(:,cols(2)), Xon(:,cols(3)), 'o');
 hold on; grid on; plot3(Xoff(:,cols(1)), Xoff(:,cols(2)), Xoff(:,cols(3)), 'x');
 xlabel(num2str(cols(1))); ylabel(num2str(cols(2))); zlabel(num2str(cols(3))); 
+%}
 
 %%
 [C,S,~,~,pe] = pca([Xon; Xoff]);
@@ -82,6 +84,10 @@ XonPC = Xon*C; XoffPC = Xoff*C;
 figure; plot3(XonPC(:,1), XonPC(:,2), XonPC(:,3), 'o');
 hold on; grid on; plot3(XoffPC(:,1), XoffPC(:,2), XoffPC(:,3), 'x');
 xlabel('1'); ylabel('2'); zlabel('3');
+
+%%
+figure; plot(XonT(:,1), XonT(:,2), 'o');
+hold on; grid on; plot(XoffT(:,1), XoffT(:,2), 'x');
 
 %%
 figure; plot(mean(Xon), 'b'); hold on; plot(mean(Xoff), 'r'); grid on;

@@ -7,11 +7,11 @@
 
 KNNfunc = @(Xtrain, Ytrain, Xtest) knnclassify(Xtest, Xtrain, Ytrain, 20);
 
-MLfunc = @(xtr,ytr,xte) SVMfunc(xtr,ytr,xte);
+MLfunc = @(xtr,ytr,xte) logregfunc(xtr,ytr,xte);
 
 sub = 1;
 Y = train_dg{sub};
-Ymm = movmean(Y, ceil(length(Y)/100));
+Ymm = movmean(Y, ceil(length(Y)/10));
 Yactive = Ymm > .1; 
 Y0 = Y; Y = double(Yactive) + 1;
 
@@ -25,8 +25,11 @@ trim = length(Y)-length(X) + 1;
 Y = Y(trim:end,:);
 
 % normalize X
-X = X - mean(X, 2); X = X./std(X, [], 2);
+%X = X - mean(X, 2); X = X./std(X, [], 2);
 %Y = Y - mean(Y, 2); Y = Y./std(Y, [], 2);
+X = X - mean(X); 
+Ctrim = C(:,1:50);
+X = X*Ctrim;
 
 %{
 sub = 1;
@@ -56,18 +59,24 @@ XTR = X(1:nTR,:); XTE = X((nTR+1):end,:);
 Ytrainpred = zeros(size(YTR)); Ytestpred = zeros(size(YTE));
 figure; clear ax;
 for f = 1:5
-    Ytrainpred(:,f) = MLfunc(XTR, YTR(:,f), XTR);
-    Ytestpred(:,f) = MLfunc(XTR, YTR(:,f), XTE);
+    [Ytrainpred(:,f), trainprob] = MLfunc(XTR, YTR(:,f), XTR);
+    [Ytestpred(:,f), testprob] = MLfunc(XTR, YTR(:,f), XTE);
     ax(f) = subplot(5,1,f);
-    plot(Y(:,f), 'k'); hold on; plot([Ytrainpred(:,f); Ytestpred(:,f)], '--b');
+    plot(Y(:,f), 'k'); hold on; 
+    %plot([Ytrainpred(:,f); Ytestpred(:,f)], '.b');
+    plot([trainprob; testprob], '--b');
     plot([nTR nTR], [min(Y(:)) max(Y(:))], 'r');
     grid on; 
-    acc = sum(Ytestpred(:,f) == YTE(:,f))/length(YTE(:,f));
-    title(['test acc. = ' num2str(acc) ' | crossval ' num2str(crossvalrho(f))]);
+    testacc = sum(Ytestpred(:,f) == YTE(:,f))/length(YTE(:,f));
+    trainacc = sum(Ytrainpred(:,f) == YTR(:,f))/length(YTR(:,f));
+    title(['test acc. = ' num2str(testacc) ...
+        ' | train ' num2str(trainacc) ...
+        ' | crossval ' num2str(crossvalrho(f))]);
     ylim([.5 2.5]);
 end
 linkaxes(ax); clear ax;
 
+%%
 function Ypred = lassofunc(xtrain, ytrain, xtest)
 
         [W,FitInfo] = lasso(xtrain,ytrain, 'lambda', 0.01);
@@ -97,7 +106,7 @@ end
     %%{
     mySVM = fitcsvm(Xtr, Ytr, 'KernelFunction', 'gaussian');
     Ypred = mySVM.predict(Xtest);
-    %}
+    %} 
     %{
     mySVM = svmtrain(Ytrain, Xtrain); 
     Ypred = svmpredict(zeros(length(Xtest(:,1)), length(Ytrain(1,:))),...
@@ -106,10 +115,11 @@ end
     
 end
 
-function Ypred = logregfunc(Xtrain, Ytrain, Xtest)
+function [Ypred, prob] = logregfunc(Xtrain, Ytrain, Xtest)
 
     logreg = mnrfit(Xtrain, Ytrain);
     testProb = mnrval(logreg, Xtest);
+    prob = testProb(:,2) + 1;
     [~,Ypred] = max(testProb, [], 2);
     
 end

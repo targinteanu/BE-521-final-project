@@ -61,8 +61,9 @@ trim = length(Y)-length(X) + 1;
 Y = Y(trim:end,:);
 
 % normalize X
-X = X - mean(X, 2); X = X./std(X, [], 2);
+%X = X - mean(X, 2); X = X./std(X, [], 2);
 %Y = Y - mean(Y, 2); Y = Y./std(Y, [], 2);
+X = X - mean(X);
 
 %[C,S,~,~,pe] = pca(X); figure; plot(pe)
 
@@ -84,8 +85,8 @@ xlabel('1'); ylabel('2'); zlabel('3');
 
 %%
 figure; plot(mean(Xon), 'b'); hold on; plot(mean(Xoff), 'r'); grid on;
-%plot(([-std(Xon); std(Xon)]+mean(Xon))', '--b');
-%plot(([-std(Xoff); std(Xoff)]+mean(Xoff))', '--r');
+plot(([-std(Xon); std(Xon)]+mean(Xon))', '--b');
+plot(([-std(Xoff); std(Xoff)]+mean(Xoff))', '--r');
 %figure; plot(mean(Son), 'b'); hold on; plot(mean(Soff), 'r'); grid on;
 %plot(([-std(Son); std(Son)]+mean(Son))', '--b');
 %plot(([-std(Soff); std(Soff)]+mean(Soff))', '--r');

@@ -13,11 +13,16 @@ sub = 1;
 Y = train_dg{sub};
 Ymm = movmean(Y, ceil(length(Y)/100));
 Yactive = Ymm > .1; 
-Y0 = Y; Y1 = double(Yactive) + 1;
+Y0 = Y; Y = double(Yactive) + 1;
 
-X = mu;
-ds = 100;
-X = X(1:ds:end,:); Y = Y1(1:ds:end,:);
+% downsample
+X = MU;
+%ds = 100;
+%X = X(1:ds:end,:); Y = Y(1:ds:end,:);
+ds = floor(length(Y)/length(X));
+Y = Y(1:ds:end,:);
+trim = length(Y)-length(X) + 1;
+Y = Y(trim:end,:);
 
 % normalize X
 X = X - mean(X, 2); X = X./std(X, [], 2);

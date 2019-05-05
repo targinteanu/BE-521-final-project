@@ -83,6 +83,10 @@ end
 linkaxes(ax); clear ax;
 
 %%
+load('xy.mat');
+
+
+%%
 function Ypred = lassofunc(xtrain, ytrain, xtest)
 
         [W,FitInfo] = lasso(xtrain,ytrain, 'lambda', 0.01);

@@ -45,7 +45,7 @@ end
 MU = MU3;
 
 %%
-fing = 2;
+fing = 1;
 Y = train_dg{sub};
 Ymm = movmean(Y, ceil(length(Y)/100));
 Yactive = Ymm > .1; 
@@ -79,15 +79,29 @@ xlabel(num2str(cols(1))); ylabel(num2str(cols(2))); zlabel(num2str(cols(3)));
 %}
 
 %%
-[C,S,~,~,pe] = pca([Xon; Xoff]);
+%[C,S,~,~,pe] = pca([mean(Xon); mean(Xoff)]);
+[C,S,~,~,pe] = pca(X);
 XonPC = Xon*C; XoffPC = Xoff*C;
 figure; plot3(XonPC(:,1), XonPC(:,2), XonPC(:,3), 'o');
 hold on; grid on; plot3(XoffPC(:,1), XoffPC(:,2), XoffPC(:,3), 'x');
 xlabel('1'); ylabel('2'); zlabel('3');
 
 %%
+figure; plot(XonPC(:,1), XonPC(:,2), 'o');
+hold on; grid on; plot(XoffPC(:,1), XoffPC(:,2), 'x');
+xlabel('PC 1'); ylabel('PC 2');
+legend('moving', 'non-moving'); 
+title('Features in PC space');
+
+%%
+%%{
+XT = tsne(X); XonT = XT(onIdx, :); XoffT  = XT(offIdx, :);
 figure; plot(XonT(:,1), XonT(:,2), 'o');
 hold on; grid on; plot(XoffT(:,1), XoffT(:,2), 'x');
+xlabel('TSNE 1'); ylabel('TSNE 2');
+legend('moving', 'non-moving'); 
+title('Mu Wave Amplitude in TSNE space');
+%}
 
 %%
 figure; plot(mean(Xon), 'b'); hold on; plot(mean(Xoff), 'r'); grid on;

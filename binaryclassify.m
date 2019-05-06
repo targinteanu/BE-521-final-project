@@ -14,7 +14,7 @@ mu_raw = filter(Hbp, X); % get only the signal in the mu range
 % construct a feature matrix MU. Features at time t are the average mu wave 
 % amplitudes in the previous <numwins> windows for all neurons. 
 MU = mu_raw;
-winsize = 100; % ms
+winsize = 1000; % ms
 windisp = 100; % ms
 numwins = 10;
 MU = sqrt(movmean(MU.^2, winsize)); % RMS ~ signal amplitude 
@@ -27,7 +27,12 @@ end
 MU = MU3; 
 
 X = MU; % set X as the feature matrix
-X = X - mean(X, 2); X = X./std(X, [], 2); % normalize X (tried with and without this)
+%X = X - mean(X, 2); X = X./std(X, [], 2); % normalize X (tried with and without this)
+X = X - mean(X);
+
+%% reduce dimensionality 
+[C,S,~,~,pe] = pca(X);
+X = S(:,1:50);
 
 %% preprocess Y into two categories (finger moving or not) 
 
@@ -48,17 +53,19 @@ KNNfunc = @(Xtrain, Ytrain, Xtest) knnclassify(Xtest, Xtrain, Ytrain, 20);
 
 % ** important: change MLfunc to KNNfunc, SVMfunc, or logregfunc depending
 %    on which one you want to use ** 
-MLfunc = @(xtr,ytr,xte) logregfunc(xtr,ytr,xte);
+MLfunc = @(xtr,ytr,xte) KNNfunc(xtr,ytr,xte);
 
 % ** important: include library for libsvm if you want to use it 
 
 % compute cross validation on 10 randomized testing/training sets 
+%{
 tic 
 crossvalrho = arrayfun(@(f) mean(...
     crossval(@(Xtr,Ytr,Xte,Yte) ...
         sum(Yte == MLfunc(Xtr,Ytr,Xte))/length(Yte), ...
         X, Y(:,f))), 1:5)
 toc
+%}
 
 %% display an example of a testing and training set with predictions 
 % for each finger, display the actual Y in black and the predicted Y in
@@ -77,8 +84,11 @@ for f = 1:5
     plot(Y(:,f), 'k'); hold on; plot([Ytrainpred(:,f); Ytestpred(:,f)], '--b');
     plot([nTR nTR], [min(Y(:)) max(Y(:))], 'r');
     grid on; 
-    acc = sum(Ytestpred(:,f) == YTE(:,f))/length(YTE(:,f));
-    title(['test acc. = ' num2str(acc) ' | crossval ' num2str(crossvalrho(f))]);
+    testacc = sum(Ytestpred(:,f) == YTE(:,f))/length(YTE(:,f));
+    trainacc = sum(Ytrainpred(:,f) == YTR(:,f))/length(YTR(:,f));
+    title(['test acc. = ' num2str(testacc) ...
+        ' | train ' num2str(trainacc)]);% ...
+%        ' | crossval ' num2str(crossvalrho(f))]);
     ylim([.5 2.5]);
 end
 linkaxes(ax); clear ax;

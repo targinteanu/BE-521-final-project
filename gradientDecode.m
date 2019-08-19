@@ -4,8 +4,8 @@
 
 % test: artificial Y and X -----------------------------------------
 %Ycoeffs = [20, 0, 10, -.01, -40]; Ypowers = [1,1,1,1,1];
-%Ycoeffs = [20, .01]; Ypowers = [2, 1];
-Ycoeffs = [20 -10 .01 -3 15 .01]; Ypowers = [3, 3, 3, 3, 3, 3];
+Ycoeffs = [-.085, .00062]; Ypowers = [2, 4];
+%Ycoeffs = [20 -10 .01 -3 -15 .01]; Ypowers = [3, 3, 3, 3, 3];
 numvars = length(Ycoeffs);
 x0 = 1:1000; X = zeros(1000,numvars);
 for var = 1:numvars
@@ -85,6 +85,15 @@ hold on;
 for var = 1:n
     plot(X(:,var), Y, '.');
 end
+
+% compare with PCA -----------------------------------------
+[C,S] = pca(X); 
+figure; plot(S(:,1), Y, '*'); grid on; xlabel('X'); ylabel('Y'); 
+hold on; 
+for var = 1:n
+    plot(X(:,var), Y, '.');
+end
+% ----------------------------------------------------------
 
 function grad = getgrad(w, dydx)
 

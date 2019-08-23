@@ -5,6 +5,7 @@
 % test: artificial Y and X -----------------------------------------
 %Ycoeffs = [20, 0, 10, -.01, -40]; Ypowers = [1,1,1,1,1];
 Ycoeffs = [-.085, .00062]; Ypowers = [2, 4];
+%Ycoeffs = [5, 5]; Ypowers = [2, 2];
 %Ycoeffs = [20 -10 .01 -3 -15 .01]; Ypowers = [3, 3, 3, 3, 3];
 numvars = length(Ycoeffs);
 x0 = 1:1000; X = zeros(1000,numvars);
@@ -46,10 +47,22 @@ for var = 1:n
     dYdX(:,var) = dYdXsort(IdxUnsort(:,var),var);
 end
 
+% test: 2D problem ----------------------------------------
+%figure; plot3(X(:,1), X(:,2), Y, '.'); hold on; grid on; 
+figure; 
+quiver(X(:,1), dYdX(:,1), X(:,2), dYdX(:,2));
+% end test ------------------------------------------------
+
 % test: overwrite dYdX ------------------------------------
 for var = 1:n
     dYdX(:,var) = Ycoeffs(var)*X(:,var).^(Ypowers(var)-1);
 end
+% end test ------------------------------------------------
+
+% test: 2D problem ----------------------------------------
+figure; plot3(X(:,1), X(:,2), Y, '.'); hold on; grid on; 
+%figure; 
+quiver(X(:,1), dYdX(:,1), X(:,2), dYdX(:,2));
 % end test ------------------------------------------------
 
 wstart = (SD/norm(SD))';

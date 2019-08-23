@@ -6,8 +6,8 @@
 %Ycoeffs = [20, 0, 10, -.01, -40]; Ypowers = [1,1,1,1,1];
 %Ycoeffs = [-.085, .00062]; Ypowers = [2, 4];
 %Ycoeffs = [5, 5]; Ypowers = [2, 2];
-Ycoeffs = [20 -10 .01 -3 -15 .01]; Ypowers = [1, 3, 5, 3, 1, 1];
-%Ycoeffs = [3, 3]; Ypowers = [2, 2];
+%Ycoeffs = [20 -10 .01 -3 -15 .01]; Ypowers = [1, 3, 5, 3, 1, 1];
+Ycoeffs = [3, 3]; Ypowers = [3, 3];
 numvars = length(Ycoeffs);
 x0 = 1:1000; X = zeros(1000,numvars);
 for var = 1:numvars
@@ -42,20 +42,42 @@ end
 %dXsort = Xsorted(2:end,:) - Xsorted(1:(end-1),:); dXsort = [dXsort(1,:); dXsort];
 %dYsort = Ysorted(2:end,:) - Ysorted(1:(end-1),:); dYsort = [dYsort(1,:); dYsort];
 
-dYdXsort = dYsort./dXsort; 
-dYdXsort(isinf(dYdXsort)) = 0;
-dYdX = zeros(size(dYdXsort));
+%dYdXsort = dYsort./dXsort; 
+%dYdXsort(isinf(dYdXsort)) = 0;
+dX = zeros(size(dXsort)); dY = zeros(size(dYsort));
 
+for var = 1:n
+    dX(:,var) = dXsort(IdxUnsort(:,var),var);
+    dY(:,var) = dYsort(IdxUnsort(:,var),var);
+end
+
+A = cell(n,n); 
+for i = 1:n
+    for j = 1:n
+        A{i,j} = diag( dX(IdxSort(:,i), j) );
+    end
+end
+A = cell2mat(A); 
+A = [A, dYsort(:)];
+n = null(A);
+size(n)
+figure; plot(n)
+%B = rref(A);
+
+dYdXsort = zeros(size(dYsort)); 
+%dYdXsort(:) = B(:,end);
+dYdX = zeros(size(dYdXsort));
 for var = 1:n
     dYdX(:,var) = dYdXsort(IdxUnsort(:,var),var);
 end
 
+
 % test: overwrite dYdX ------------------------------------
 for var = 1:n
-    dYdX(:,var) = Ycoeffs(var)*Ypowers(var)*X(:,var).^(Ypowers(var)-1);
+    dYdX_act(:,var) = Ycoeffs(var)*Ypowers(var)*X(:,var).^(Ypowers(var)-1);
 end
 
-%{
+%%{
 figure; hold on; grid on; 
 colr = 'rbmgcy';
 for var = 1:n
@@ -65,7 +87,7 @@ end
 %}
 % end test ------------------------------------------------
 
-%%{
+%{
 wstart = (SD/norm(SD))';
 %stepsize = 1e-18;
 stepsize = 1e-5;

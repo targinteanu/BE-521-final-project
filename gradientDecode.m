@@ -3,11 +3,11 @@
 %Y = Yall(:,3);
 
 % test: artificial Y and X -----------------------------------------
-%Ycoeffs = [20, 0, 10, -.01, -40]; Ypowers = [1,1,1,1,1];
+%Ycoeffs = [20, 0, 10, -.01]; Ypowers = [1,1,1,1];
 %Ycoeffs = [-.085, .00062]; Ypowers = [2, 4];
 %Ycoeffs = [5, 5]; Ypowers = [2, 2];
 %Ycoeffs = [20 -10 .01 -3 -15 .01]; Ypowers = [1, 3, 5, 3, 1, 1];
-Ycoeffs = [3, 3]; Ypowers = [3, 3];
+Ycoeffs = [3, 3]; Ypowers = [3, 2];
 numvars = length(Ycoeffs);
 x0 = 1:1000; X = zeros(1000,numvars);
 for var = 1:numvars
@@ -58,14 +58,25 @@ for i = 1:n
     end
 end
 A = cell2mat(A); 
+
+Aint = cell(n,n);
+for i = 1:n
+    for j = 1:n
+        Aint{i,j} = (i==j)*dX(IdxSort(:,i), j)';
+    end
+end
+Aint = cell2mat(Aint);
+Aint = [Aint, (Ysorted(end,:) - Ysorted(1,:))']; % integral condition 
+
 A = [A, dYsort(:)];
-n = null(A);
-size(n)
-figure; plot(n)
-%B = rref(A);
+A = [A; Aint];
+nu = null(A);
+size(nu)
+%figure; plot(n)
+B = rref(A);
 
 dYdXsort = zeros(size(dYsort)); 
-%dYdXsort(:) = B(:,end);
+dYdXsort(:) = B(1:(end-n),end);
 dYdX = zeros(size(dYdXsort));
 for var = 1:n
     dYdX(:,var) = dYdXsort(IdxUnsort(:,var),var);

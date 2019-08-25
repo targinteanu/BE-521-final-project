@@ -28,7 +28,7 @@ end
 
 % weight by variance of each variable 
 SD = std(X);
-%X = X.*(SD/max(SD));
+X = X.*(SD/max(SD));
 
 %{
 Xdisp = permute(X, [1 3 2]) - permute(X, [3 1 2]);

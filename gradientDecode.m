@@ -6,8 +6,8 @@
 %Ycoeffs = [20, 0, 10, -.01]; Ypowers = [1,1,1,1];
 %Ycoeffs = [-.085, .00062]; Ypowers = [2, 4];
 %Ycoeffs = [5, 5]; Ypowers = [2, 2];
-%Ycoeffs = [20 -10 .01 -3 -15 .01]; Ypowers = [1, 3, 5, 3, 1, 1];
-Ycoeffs = [3, 3]; Ypowers = [3, 2];
+Ycoeffs = [20 -10 .01 -3 -15 .01]; Ypowers = [1, 3, 5, 3, 1, 1];
+%Ycoeffs = [3, 4, -5]; Ypowers = [3, 2, 1];
 numvars = length(Ycoeffs);
 x0 = 1:1000; X = zeros(1000,numvars);
 for var = 1:numvars
@@ -86,7 +86,7 @@ end
 %}
 Xdisp = permute(X, [1 3 2]) - permute(X, [3 1 2]);
 Xdist = sqrt(sum(Xdisp.^2, 3));
-epsilon = mean(Xdist(:)) - 1.5*std(Xdist(:))
+epsilon = mean(Xdist(:)) - 1.75*std(Xdist(:))
 targetIdx = (Xdist <= epsilon) & Xdist;
 [source, target] = find(targetIdx); numpts = sum(targetIdx,2);
 sparsity = sum(numpts < n)/length(numpts)

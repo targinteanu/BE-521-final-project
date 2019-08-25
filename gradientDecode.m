@@ -20,12 +20,14 @@ for var = 1:numvars
 end
 % end test ----------------------------------------------------------
 
+%%
 [m,n] = size(X);
 
 % weight by variance of each variable 
 SD = std(X);
 %X = X.*(SD/max(SD));
 
+%{
 IdxSort = zeros(size(X)); IdxUnsort = zeros(size(X));
 Xsorted = zeros(size(X)); Ysorted = zeros(size(X));
 dXsort = zeros(size(Xsorted)); dYsort = zeros(size(Ysorted));
@@ -81,7 +83,55 @@ dYdX = zeros(size(dYdXsort));
 for var = 1:n
     dYdX(:,var) = dYdXsort(IdxUnsort(:,var),var);
 end
+%}
+Xdisp = permute(X, [1 3 2]) - permute(X, [3 1 2]);
+Xdist = sqrt(sum(Xdisp.^2, 3));
+epsilon = mean(Xdist(:)) - 1.5*std(Xdist(:))
+targetIdx = (Xdist <= epsilon) & Xdist;
+[source, target] = find(targetIdx); numpts = sum(targetIdx,2);
+sparsity = sum(numpts < n)/length(numpts)
+[srcSort, srcSortIdx] = sort(source); targetSort = target(srcSortIdx);
 
+dYdX = zeros(size(X));
+for t = 1:m
+    if numpts(t) >= n
+        dX_t = X(targetIdx(t,:)',:) - X(t,:);
+        dY_t = Y(targetIdx(t,:)') - Y(t);
+        dYdX_t = dX_t\dY_t;
+        dYdX(t,:) = dYdX_t';
+    else
+        dYdX(t,:) = NaN; % leave a NaN hole where there aren't enough close points to estimate gradient
+    end
+end
+
+% fill in NaN holes with surrounding data 
+IdxSort = zeros(size(X)); IdxUnsort = zeros(size(X));
+Xsorted = zeros(size(X)); 
+dYdXsorted = zeros(size(dYdX));
+for var = 1:n
+    [Xsorted(:,var), IdxSort(:,var)] = sort(X(:,var));
+    [~, IdxUnsort(:,var)] = sort(IdxSort(:,var));
+    dYdXsorted(:,var) = dYdX(IdxSort(:,var),var);
+end
+dYdXsorted(isnan(dYdXsorted)) = 0;
+
+sigma = 20; 
+% Determine filter length
+filterExtent = ceil(4*sigma);
+t = -filterExtent:filterExtent;
+% Create 1-D Gaussian Kernel
+c = 1/(sqrt(2*pi)*sigma);
+gaussKernel = c * exp(-(t.^2)/(2*sigma^2));
+% Normalize to ensure kernel sums to one
+gaussKernel = gaussKernel/sum(gaussKernel);
+dYdXsorted = imfilter(dYdXsorted, gaussKernel', 'conv', 'replicate');
+
+dYdXfilt = zeros(size(dYdX));
+for var = 1:n
+    dYdXfilt(:,var) = dYdXsorted(IdxUnsort(:,var),var);
+end
+nanIdx = isnan(dYdX); 
+dYdX(nanIdx) = dYdXfilt(nanIdx);
 
 % test: overwrite dYdX ------------------------------------
 for var = 1:n
@@ -94,10 +144,12 @@ colr = 'rbmgcy';
 for var = 1:n
     plot(X(:,var), dYdX(:,var), ['.' colr(var)]); 
     plot(X(:,var), dYdX_act(:,var), ['o' colr(var)]); 
+    plot(X((numpts < n),var), dYdX((numpts < n),var), ['s' colr(var)]);
 end
 %}
 % end test ------------------------------------------------
 
+%%
 %{
 wstart = (SD/norm(SD))';
 %stepsize = 1e-18;

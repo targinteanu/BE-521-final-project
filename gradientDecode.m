@@ -1,7 +1,9 @@
-%load('XYdata.mat'); 
-%Yall = Yall(1:100:end,:); Yall = Yall(11:end,:);
-%Y = Yall(:,3);
+%%{
+load('XYdata.mat'); 
+Yall = Yall(1:100:end,:); Yall = Yall(11:end,:);
+Y = Yall(:,3);
 
+%{
 % test: artificial Y and X -----------------------------------------
 %Ycoeffs = [20, 0, 10, -.01]; Ypowers = [1,1,1,1];
 %Ycoeffs = [-.085, .00062]; Ypowers = [2, 4];
@@ -19,6 +21,7 @@ for var = 1:numvars
     Y = Y + Ycoeffs(var)*X(:,var).^Ypowers(var);
 end
 % end test ----------------------------------------------------------
+%}
 
 %%
 [m,n] = size(X);
@@ -84,13 +87,23 @@ for var = 1:n
     dYdX(:,var) = dYdXsort(IdxUnsort(:,var),var);
 end
 %}
+
+%{
 Xdisp = permute(X, [1 3 2]) - permute(X, [3 1 2]);
 Xdist = sqrt(sum(Xdisp.^2, 3));
-epsilon = mean(Xdist(:)) - 1.75*std(Xdist(:))
+%}
+Xdist = zeros(m,m);
+for i = 1:m
+    for j = 1:m
+        Xdist(i,j) = norm(X(i,:) - X(j,:));
+    end
+end
+
+epsilon = mean(Xdist(:)) - .25*std(Xdist(:))
 targetIdx = (Xdist <= epsilon) & Xdist;
 [source, target] = find(targetIdx); numpts = sum(targetIdx,2);
 sparsity = sum(numpts < n)/length(numpts)
-[srcSort, srcSortIdx] = sort(source); targetSort = target(srcSortIdx);
+fitstrength = mean(numpts(numpts >= n))/n
 
 dYdX = zeros(size(X));
 for t = 1:m
@@ -134,26 +147,30 @@ nanIdx = isnan(dYdX);
 dYdX(nanIdx) = dYdXfilt(nanIdx);
 
 % test: overwrite dYdX ------------------------------------
+%{
 for var = 1:n
     dYdX_act(:,var) = Ycoeffs(var)*Ypowers(var)*X(:,var).^(Ypowers(var)-1);
 end
+%}
 
-%%{
+%{
 figure; hold on; grid on; 
 colr = 'rbmgcy';
-for var = 1:n
+%for var = 1:n
+for var = 1:6
     plot(X(:,var), dYdX(:,var), ['.' colr(var)]); 
-    plot(X(:,var), dYdX_act(:,var), ['o' colr(var)]); 
+%    plot(X(:,var), dYdX_act(:,var), ['o' colr(var)]); 
     plot(X((numpts < n),var), dYdX((numpts < n),var), ['s' colr(var)]);
 end
 %}
 % end test ------------------------------------------------
 
+%}
 %%
-%{
+%%{
 wstart = (SD/norm(SD))';
 %stepsize = 1e-18;
-stepsize = 1e-5;
+stepsize = 1e-3;
 w = wstart;
 gwmags = zeros(1,1000); 
 wangles = zeros(size(gwmags));
@@ -165,7 +182,7 @@ for i = 1:length(gwmags)
     wangles(i) = wstart'*w;
 end
 %%{
-[w (Ycoeffs/norm(Ycoeffs))']
+%[w (Ycoeffs/norm(Ycoeffs))']
 wangles = acos(wangles);
 figure; 
 subplot(2,1,1); plot(gwmags); ylabel('grad mag'); xlabel('steps'); grid on;
@@ -174,11 +191,17 @@ subplot(2,1,2); plot(wangles); ylabel('w direction change'); xlabel('steps'); gr
 
 %%{
 figure; 
-subplot(2,1,1); plot(X*w, 'LineWidth', 2); grid on; ylabel('X'); xlabel('time');  
-hold on; plot(X);
+%subplot(2,1,1); plot(X*w, 'LineWidth', 2); grid on; ylabel('X'); xlabel('time');  
+subplot(2,1,1); plot(X*w); grid on; ylabel('X'); xlabel('time');  
+%hold on; plot(X);
 subplot(2,1,2); plot(Y); grid on; ylabel('Y'); xlabel('time');
 %%}
 
+figure; plot(X*w, Y, '.'); grid on; xlabel('X'); ylabel('Y'); 
+hold on; 
+[C,S] = pca(X); plot(S(:,1), Y, '.');
+legend('proposed', 'first PC');
+%{
 figure; plot(X*w, Y, '*'); grid on; xlabel('X'); ylabel('Y'); 
 hold on; 
 for var = 1:n
@@ -194,6 +217,7 @@ for var = 1:n
 end
 title('first PC')
 % ----------------------------------------------------------
+%}
 
 function grad = getgrad(w, dydx)
 

@@ -31,64 +31,6 @@ SD = std(X);
 %X = X.*(SD/max(SD));
 
 %{
-IdxSort = zeros(size(X)); IdxUnsort = zeros(size(X));
-Xsorted = zeros(size(X)); Ysorted = zeros(size(X));
-dXsort = zeros(size(Xsorted)); dYsort = zeros(size(Ysorted));
-
-for var = 1:n
-    [Xsorted(:,var), IdxSort(:,var)] = sort(X(:,var));
-    Ysorted(:,var) = Y(IdxSort(:,var));
-    [~, IdxUnsort(:,var)] = sort(IdxSort(:,var));
-    
-    dXsort(:,var) = gradient(Xsorted(:,var)); 
-    dYsort(:,var) = gradient(Ysorted(:,var));
-end
-
-%dXsort = Xsorted(2:end,:) - Xsorted(1:(end-1),:); dXsort = [dXsort(1,:); dXsort];
-%dYsort = Ysorted(2:end,:) - Ysorted(1:(end-1),:); dYsort = [dYsort(1,:); dYsort];
-
-%dYdXsort = dYsort./dXsort; 
-%dYdXsort(isinf(dYdXsort)) = 0;
-dX = zeros(size(dXsort)); dY = zeros(size(dYsort));
-
-for var = 1:n
-    dX(:,var) = dXsort(IdxUnsort(:,var),var);
-    dY(:,var) = dYsort(IdxUnsort(:,var),var);
-end
-
-A = cell(n,n); 
-for i = 1:n
-    for j = 1:n
-        A{i,j} = diag( dX(IdxSort(:,i), j) );
-    end
-end
-A = cell2mat(A); 
-
-Aint = cell(n,n);
-for i = 1:n
-    for j = 1:n
-        Aint{i,j} = (i==j)*dX(IdxSort(:,i), j)';
-    end
-end
-Aint = cell2mat(Aint);
-Aint = [Aint, (Ysorted(end,:) - Ysorted(1,:))']; % integral condition 
-
-A = [A, dYsort(:)];
-A = [A; Aint];
-nu = null(A);
-size(nu)
-%figure; plot(n)
-B = rref(A);
-
-dYdXsort = zeros(size(dYsort)); 
-dYdXsort(:) = B(1:(end-n),end);
-dYdX = zeros(size(dYdXsort));
-for var = 1:n
-    dYdX(:,var) = dYdXsort(IdxUnsort(:,var),var);
-end
-%}
-
-%{
 Xdisp = permute(X, [1 3 2]) - permute(X, [3 1 2]);
 Xdist = sqrt(sum(Xdisp.^2, 3));
 %}

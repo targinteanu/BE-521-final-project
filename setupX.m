@@ -37,6 +37,7 @@ ds = floor(length(Y)/length(X));
 Y = Y(1:ds:end,:);
 trim = length(Y)-length(X) + 1;
 Y = Y(trim:end,:);
+Y0 = Y0(1:ds:end,:); Y0 = Y0(trim:end,:);
 
 % normalize X
 %X = X - mean(X, 2); X = X./std(X, [], 2);
@@ -53,3 +54,38 @@ for fing = 1:5
     Xon{fing} = X(onIdx(:,fing),:); Xoff{fing} = X(offIdx(:,fing),:);
     C{fing} = pca([Xon{fing}; Xoff{fing}]);
 end
+
+%%
+figure; clear ax;
+Xc = zeros(size(Y));
+for f = 1:5
+    ax(f) = subplot(5,1,f);
+    plot(Y(:,f), 'k', 'LineWidth', 1); hold on; grid on; 
+    plot(Y0(:,f), 'k');
+    Xc(:,f) = YOLC(X, Y(:,f), -.25, 0, 1e-3, 0, true);
+    plot(Xc(:,f), 'b');
+    f
+end
+linkaxes(ax); clear ax;
+
+%%
+m1 = arrayfun(@(f) mean(Xc(Y(:,f)==1,f)), 1:5); s1 = arrayfun(@(f) std(Xc(Y(:,f)==1,f)), 1:5);
+m2 = arrayfun(@(f) mean(Xc(Y(:,f)==2,f)), 1:5); s2 = arrayfun(@(f) std(Xc(Y(:,f)==2,f)), 1:5);
+figure; errorbar(m1, s1); hold on; errorbar(m2, s2); grid on;
+thresh = (m1 + m2)/2; [~,dir] = max([m1;m2]);
+figure; clear ax;
+for f = 1:5
+    ax(f) = subplot(5,1,f);
+    plot(Y(:,f), 'k', 'LineWidth', 1); hold on; grid on; 
+    plot(Y0(:,f), 'k');
+    if dir(f) == 1
+        Xbin = (Xc(:,f) < thresh(f));
+    else
+        Xbin = (Xc(:,f) > thresh(f));
+    end
+    Xbin = Xbin + 1;
+    plot(Xbin, ':b', 'LineWidth', 2);
+    acc = mean(Xbin == Y(:,f));
+    title(num2str(acc));
+end
+linkaxes(ax); clear ax;

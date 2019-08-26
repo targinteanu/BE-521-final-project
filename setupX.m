@@ -60,13 +60,13 @@ figure; clear ax;
 Xc = zeros(size(Y));
 w = zeros(610,5);
 spars = zeros(1,5); stren = spars; eps = spars;
-trainbound = floor(.5*length(X));
+trainbound = floor(.8*length(X));
 for f = 1:5
     ax(f) = subplot(5,1,f);
     plot(Y(:,f), 'k', 'LineWidth', 1); hold on; grid on; 
     plot(Y0(:,f), 'k');
-    [~,w(:,f),spars(f),stren(f),eps(f)] = ...
-        YOLC(X(1:trainbound,:), Y(1:trainbound,f), -.25, 0, 1e-3, 0, true);
+    [~,w(:,f),spars(f),stren(f),eps(f),mag,ang] = ...
+        YOLC(X(1:trainbound,:), Y(1:trainbound,f), -.1, 0, 1e-3, 0, true);
     Xc(:,f) = X*w(:,f);
     plot(Xc(:,f), 'b');
     f
@@ -74,8 +74,8 @@ end
 linkaxes(ax); clear ax;
 
 %%
-m1 = arrayfun(@(f) mean(Xc(Y(:,f)==1,f)), 1:5); s1 = arrayfun(@(f) std(Xc(Y(:,f)==1,f)), 1:5);
-m2 = arrayfun(@(f) mean(Xc(Y(:,f)==2,f)), 1:5); s2 = arrayfun(@(f) std(Xc(Y(:,f)==2,f)), 1:5);
+m1 = arrayfun(@(f) mean(Xc(Y(1:trainbound,f)==1,f)), 1:5); s1 = arrayfun(@(f) std(Xc(Y(1:trainbound,f)==1,f)), 1:5);
+m2 = arrayfun(@(f) mean(Xc(Y(1:trainbound,f)==2,f)), 1:5); s2 = arrayfun(@(f) std(Xc(Y(1:trainbound,f)==2,f)), 1:5);
 figure; errorbar(m1, s1); hold on; errorbar(m2, s2); grid on;
 thresh = (m1 + m2)/2; [~,dir] = max([m1;m2]);
 figure; clear ax;
@@ -91,6 +91,8 @@ for f = 1:5
     Xbin = Xbin + 1;
     plot(Xbin, ':b', 'LineWidth', 2);
     acc = mean(Xbin == Y(:,f));
-    title(num2str(acc));
+    trainacc = mean(Xbin(1:trainbound) == Y(1:trainbound,f));
+    testacc = mean(Xbin(trainbound:end) == Y(trainbound:end,f));
+    title([num2str(acc) ' | train ' num2str(trainacc) ' | test ' num2str(testacc)]);
 end
 linkaxes(ax); clear ax;

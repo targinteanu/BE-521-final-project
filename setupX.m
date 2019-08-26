@@ -58,11 +58,16 @@ end
 %%
 figure; clear ax;
 Xc = zeros(size(Y));
+w = zeros(610,5);
+spars = zeros(1,5); stren = spars; eps = spars;
+trainbound = floor(.5*length(X));
 for f = 1:5
     ax(f) = subplot(5,1,f);
     plot(Y(:,f), 'k', 'LineWidth', 1); hold on; grid on; 
     plot(Y0(:,f), 'k');
-    Xc(:,f) = YOLC(X, Y(:,f), -.25, 0, 1e-3, 0, true);
+    [~,w(:,f),spars(f),stren(f),eps(f)] = ...
+        YOLC(X(1:trainbound,:), Y(1:trainbound,f), -.25, 0, 1e-3, 0, true);
+    Xc(:,f) = X*w(:,f);
     plot(Xc(:,f), 'b');
     f
 end

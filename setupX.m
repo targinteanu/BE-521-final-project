@@ -26,7 +26,7 @@ MU = MU3;
 
 Y = train_dg{sub};
 Ymm = movmean(Y, ceil(length(Y)/100));
-Yactive = Ymm > .1; 
+Yactive = Ymm > .5; 
 Y0 = Y; Y = double(Yactive) + 1;
 
 % downsample
@@ -56,6 +56,7 @@ for fing = 1:5
 end
 
 %%
+%{
 figure; clear ax;
 Xc = zeros(size(Y));
 w = zeros(610,5);
@@ -96,3 +97,29 @@ for f = 1:5
     title([num2str(acc) ' | train ' num2str(trainacc) ' | test ' num2str(testacc)]);
 end
 linkaxes(ax); clear ax;
+
+%}
+
+%%
+figure; clear ax;
+Xc = zeros(size(Y));
+w = zeros(610,5);
+spars = zeros(1,5); stren = spars; eps = spars;
+trainbound = floor(.8*length(X));
+for f = 1:5
+    Xtr = X(1:trainbound,:); Ytr = Y(1:trainbound,f); Y0tr = Y0(1:trainbound,f);
+    Xtr = Xtr(Ytr == 2); Y0tr = Y0tr(Ytr == 2);
+    ax(f) = subplot(5,1,f);
+    plot(Y(:,f), 'k', 'LineWidth', 1); hold on; grid on; 
+    plot(Y0(:,f), 'k');
+    [~,w(:,f),spars(f),stren(f),eps(f),mag,ang] = ...
+        YOLC(Xtr, Y0tr, -.1, 0, 1e-3, 0, false);
+    Xc(:,f) = X*w(:,f);
+%    plot(Xc(:,f), 'b');
+    f
+end
+linkaxes(ax); clear ax;
+figure; grid on; hold on;
+for f = 1:5
+    plot(Xc(Y(:,f)==2,f), Y0(Y(:,f)==2,f), '.');
+end

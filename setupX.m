@@ -14,7 +14,6 @@ winsize = 1000; % ms
 windisp = 100; % ms
 numwins = 10;
 MU = sqrt(movmean(MU.^2, winsize));
-
 MU2 = MU(1:windisp:end,:);
 MU3 = zeros( size(MU2).*[1,numwins] - [numwins,0] );
 for t = 1:length(MU3)

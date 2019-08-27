@@ -1,9 +1,11 @@
 %%{
+%{
 load('XYdata.mat'); 
 Yall = Yall(1:100:end,:); Yall = Yall(11:end,:);
 Y = Yall(:,3);
+%}
 
-%{
+%%{
 % test: artificial Y and X -----------------------------------------
 %Ycoeffs = [20, 0, 10, -.01]; Ypowers = [1,1,1,1];
 %Ycoeffs = [-.085, .00062]; Ypowers = [2, 4];

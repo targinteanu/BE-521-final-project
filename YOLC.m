@@ -1,4 +1,4 @@
-function [Xc, w, sparsity, fitstrength, epsilon, gwmags, wangles] = ...
+function [Xc, w, sparsity, fitstrength, epsilon, gwmags, wangles, Xdist] = ...
     YOLC(X, Y, epsilon, sigma, stepsize, wstart, discrete)
 
 % perform Y-Optimized Linear Combination of variables X, i.e. LC of X that
@@ -71,7 +71,7 @@ for i = 1:m
     end
 end
 
-if (epsilon < 0)
+if (epsilon <= 0)
     epsilon = mean(Xdist(:)) + epsilon*std(Xdist(:));
 end
 targetIdx = (Xdist <= epsilon) & Xdist;

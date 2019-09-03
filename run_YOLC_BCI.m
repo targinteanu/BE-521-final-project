@@ -51,7 +51,7 @@ M2 = Mraw(1:windisp:end,:);
 
 % get other windowed features
 %featfn = {LL, Area, Energy, ZX};
-featfn = {LL, Energy};
+featfn = {LL};
 Xfeats = arrayfun(@(i) MovingWinFeats(Xraw, fs, winsize/1000, windisp/1000, featfn{i}), ...
     1:length(featfn), 'UniformOutput', false);
 
@@ -93,11 +93,40 @@ y = Y(:,fing);
 ybin = Ybin(:,fing);
 idxOn = ybin == 2; idxOff = ybin == 1;
 
-[Xc, w, sparsity, strength, eps, mags, angles, Xdist] = YOLC(X(idxOn,:), y(idxOn), 200, 0, 1e-3, 0, false);
+[Xc, w, sparsity, strength, eps, mags, angles, Xdist] = YOLC(X(idxOn,:), y(idxOn), 70, 0, 1e-3, 0, false);
 
 %
 figure; plot(y/max(y(:))); hold on; plot(ybin-1); plot(X*w/max(X(:)));
-figure; plot(Xc, y(idxOn), '.');
+figure; plot(Xc, y(idxOn), '*'); hold on; grid on;
 [sparsity, strength, eps]
-figure; histogram(Xdist(:));
+%figure; histogram(Xdist(:));
+%}
+
+%% random cross val 
+trainsz = ceil(.8*length(IdxOn));
+IdxTrain = randperm(length(IdxOn)); IdxTrain = IdxTrain(1:trainsz); 
+%IdxTrain = 1:trainsz; 
+IdxTrain2 = IdxOn(IdxTrain);
+[xci, wi, spi, stri, ~,~,~, Xdi] = YOLC(X(IdxTrain2,:), y(IdxTrain2), eps, 0, 1e-3, 0, false);
+xc = X(idxOn,:)*wi;
+FO = fit(xci, y(IdxTrain2), 'poly1'); 
+ypred = xc*FO.p1 + FO.p2;
+ytrainpred = nan(size(ypred)); ytrainpred(IdxTrain) = xc(IdxTrain)*FO.p1 + FO.p2;
+figure; plot(y(idxOn), 'k', 'LineWidth', 2); grid on; hold on; 
+plot(ytrainpred, 'r', 'LineWidth', 1);
+plot(ypred, '--r');
+title(['\rho_{tot} = ' num2str(corr(y(idxOn), ypred)) ...
+    ', \rho_{tr} = ' num2str(corr(y(IdxTrain2), ytrainpred(IdxTrain)))]);
+legend('actual', 'training', 'testing')
+
+%% cross validate 
+%{
+IdxOn = find(idxOn);
+trainsz = ceil(.8*length(IdxOn));
+for i = 1:25:(length(IdxOn) - trainsz)
+    IdxTrain = IdxOn( i + (0:(trainsz - 1)) ); 
+    [xci, wi, spi, stri, ~,~,~, Xdi] = YOLC(X(IdxTrain,:), y(IdxTrain), eps, 0, 1e-3, 0, false);
+    plot(X(IdxOn,:)*wi, y(IdxOn), '.');
+    [i, spi, stri]
+end
 %}

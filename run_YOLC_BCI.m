@@ -17,7 +17,8 @@ NumWins = @(xLen, fs, winLen, winDisp) floor((xLen/fs - winLen + winDisp)/winDis
 % extract mu brainwave and other bands 
 %%{
 %bandfilts = [Hbp, band1filt, band2filt, band3filt]; %, band4filt, band5filt];
-bandfilts = [Hbp, band1filt, band3filt];
+%bandfilts = [Hbp, band1filt, band3filt];
+bandfilts = [Hbp];
 Xband = cell(size(bandfilts));
 for filt = 1:length(bandfilts)
     Xband{filt} = filter(bandfilts(filt), Xraw);
@@ -93,30 +94,33 @@ y = Y(:,fing);
 ybin = Ybin(:,fing);
 idxOn = ybin == 2; idxOff = ybin == 1;
 
-[Xc, w, sparsity, strength, eps, mags, angles, Xdist] = YOLC(X(idxOn,:), y(idxOn), 70, 0, 1e-3, 0, false);
+[Xc, w, sparsity, strength, eps, mags, angles, Xdist] = YOLC(X(idxOn,:), y(idxOn), 30, 0, 1e-3, 0, false);
 
 %
-figure; plot(y/max(y(:))); hold on; plot(ybin-1); plot(X*w/max(X(:)));
+%figure; plot(y/max(y(:))); hold on; plot(ybin-1); plot(X*w/max(X(:)));
 figure; plot(Xc, y(idxOn), '*'); hold on; grid on;
 [sparsity, strength, eps]
 %figure; histogram(Xdist(:));
 %}
 
 %% random cross val 
-trainsz = ceil(.8*length(IdxOn));
-IdxTrain = randperm(length(IdxOn)); IdxTrain = IdxTrain(1:trainsz); 
-%IdxTrain = 1:trainsz; 
+IdxOn = find(idxOn);
+trainsz = ceil(.5*length(IdxOn));
+%IdxTrain = randperm(length(IdxOn)); IdxTrain = IdxTrain(1:trainsz); 
+IdxTrain = 1:trainsz; 
 IdxTrain2 = IdxOn(IdxTrain);
-[xci, wi, spi, stri, ~,~,~, Xdi] = YOLC(X(IdxTrain2,:), y(IdxTrain2), eps, 0, 1e-3, 0, false);
+[xci, wi, spi, stri, epsi ,~,~, Xdi] = YOLC(X(IdxTrain2,:), y(IdxTrain2), 50, 0, 1e-3, 0, false);
 xc = X(idxOn,:)*wi;
 FO = fit(xci, y(IdxTrain2), 'poly1'); 
 ypred = xc*FO.p1 + FO.p2;
 ytrainpred = nan(size(ypred)); ytrainpred(IdxTrain) = xc(IdxTrain)*FO.p1 + FO.p2;
+idxTest = isnan(ytrainpred); IdxTest2 = IdxOn(idxTest);
 figure; plot(y(idxOn), 'k', 'LineWidth', 2); grid on; hold on; 
 plot(ytrainpred, 'r', 'LineWidth', 1);
 plot(ypred, '--r');
 title(['\rho_{tot} = ' num2str(corr(y(idxOn), ypred)) ...
-    ', \rho_{tr} = ' num2str(corr(y(IdxTrain2), ytrainpred(IdxTrain)))]);
+    ', \rho_{tr} = ' num2str(corr(y(IdxTrain2), ytrainpred(IdxTrain))) ...
+    ', \rho_{te} = ' num2str(corr(y(IdxTest2), ypred(idxTest))) ]);
 legend('actual', 'training', 'testing')
 
 %% cross validate 

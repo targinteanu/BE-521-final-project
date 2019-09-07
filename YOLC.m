@@ -127,7 +127,7 @@ if (nargin < 5)|(stepsize == 0)
     %stepsize = 1e-3;
     stepsize = 100/(m*mean(dYdXmag)^2);
 end
-numsteps = ceil(1/stepsize);
+numsteps = max(ceil(1/stepsize), 1000);
 
 w = wstart;
 gwmags = zeros(1,numsteps); 

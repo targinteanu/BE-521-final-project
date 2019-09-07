@@ -2,9 +2,13 @@
 sub = 1; 
 load('project_data_edit.mat')
 Xraw = train_ecog{sub}; Yraw = train_dg{sub};
-load('mufilter.mat') % Hbp
-load('bandfilters.mat') % band1filt ... band5filt
+%load('mufilter.mat') % Hbp
+%load('bandfilters.mat') % band1filt ... band5filt
 fs = 1000; % Hz
+
+%%
+
+%{
 
 % define feature functions 
 LL = @(x) sum(abs(diff(x)));
@@ -24,7 +28,7 @@ for filt = 1:length(bandfilts)
     Xband{filt} = filter(bandfilts(filt), Xraw);
 end
 %Xband = [Xraw, Xband]; % include unfiltered 
-%}
+%%}
 %Xband = {Xraw};
 
 % define window size and displacement
@@ -65,27 +69,45 @@ Xwin = arrayfun(@(i) (Xwin{i} - mean(Xwin{i}(:)))/std(Xwin{i}(:)), ...
     1:length(Xwin), 'UniformOutput', false); % normalize 
 XwinM = cell2mat(Xwin);
 
+%}
+
+% downsample 
+ds = 40; 
+%Yds = Yraw((ds/2):ds:end,:); 
+Yds = Yraw(ds:ds:end,:); 
+dsX = 8;
+%Xmm = movmean(Xraw, ds);
+%Xds = Xmm((ds/2):ds:end,:);
+Xds = Xraw(1:dsX:end,:);
+
 % use previous <numwins> windows as features at each time 
-numwins = 3; % # of prev windows to use at each time
-X = zeros( size(XwinM).*[1,numwins] - [numwins,0] );
+numwins = 5; % # of prev windows to use at each time
+X = zeros( size(Xds).*[1,numwins] - [numwins,0] );
 for t = 1:size(X,1)
-    wins = XwinM(t:(t+numwins-1),:);
+    wins = Xds(t:(t+numwins-1),:);
     X(t,:) = wins(:)';
 end
 
-%% investigate X
+% downsample X
+X = X(1:numwins:end,:);
+
+% investigate X
 rho = corr(X); figure; imshow(rho);
 [C,S,~,~,pe] = pca(X); %figure; plot(pe);
 
-%% set up Y
-Ymm = movmean(Yraw, ceil(length(Yraw)/100));
+% set up Y
+Ymm = movmean(Yds, ceil(length(Yds)/100));
 Ybin = Ymm > .5; % active vs inactive 
 Ybin = double(Ybin) + 1;
+Y = Yds;
 
+%{
 Y = movmean(Yraw, winsize); % downsampled 
 Y = Y(1:windisp:end,:); Ybin = Ybin(1:windisp:end,:); % windowed 
 Y = Y(1:dur,:); Ybin = Ybin(1:dur,:); % trimmed 
-Y = Y((numwins+1):end,:); Ybin = Ybin((numwins+1):end,:); % delay 
+%}
+%Y = Y((numwins+1):end,:); Ybin = Ybin((numwins+1):end,:); % delay 
+Y = Y(2:end,:); Ybin = Ybin(2:end,:); % delay 
 
 %%
 %%{
@@ -94,12 +116,12 @@ y = Y(:,fing);
 ybin = Ybin(:,fing);
 idxOn = ybin == 2; idxOff = ybin == 1;
 
-[Xc, w, sparsity, strength, eps, mags, angles, Xdist] = YOLC(X(idxOn,:), y(idxOn), 30, 0, 1e-3, 0, false);
+[Xc, w, sparsity, strength, eps, mags, angles, Xdist] = YOLC(X(idxOn,:), y(idxOn), 1e5, 0, 10, 0, false);
 
 %
 %figure; plot(y/max(y(:))); hold on; plot(ybin-1); plot(X*w/max(X(:)));
 figure; plot(Xc, y(idxOn), '*'); hold on; grid on;
-[sparsity, strength, eps]
+%[sparsity, strength, eps]
 %figure; histogram(Xdist(:));
 %}
 
@@ -109,7 +131,7 @@ trainsz = ceil(.5*length(IdxOn));
 %IdxTrain = randperm(length(IdxOn)); IdxTrain = IdxTrain(1:trainsz); 
 IdxTrain = 1:trainsz; 
 IdxTrain2 = IdxOn(IdxTrain);
-[xci, wi, spi, stri, epsi ,~,~, Xdi] = YOLC(X(IdxTrain2,:), y(IdxTrain2), 50, 0, 1e-3, 0, false);
+[xci, wi, spi, stri, epsi, gwi, angi, Xdi] = YOLC(X(IdxTrain2,:), y(IdxTrain2), 1e5, 0, 10, 0, false);
 xc = X(idxOn,:)*wi;
 FO = fit(xci, y(IdxTrain2), 'poly1'); 
 ypred = xc*FO.p1 + FO.p2;

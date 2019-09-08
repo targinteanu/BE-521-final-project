@@ -74,14 +74,18 @@ XwinM = cell2mat(Xwin);
 % downsample 
 ds = 40; 
 %Yds = Yraw((ds/2):ds:end,:); 
-Yds = Yraw(ds:ds:end,:); 
-dsX = 8;
+%Yds = Yraw(ds:ds:end,:); 
+Ymm1 = movmean(Yraw, ds);
+ds = 10; 
+Yds = Ymm1(ds:ds:end,:);
+
+numwins = 5; % # of prev windows to use at each time
+dsX = floor(ds/numwins);
 %Xmm = movmean(Xraw, ds);
 %Xds = Xmm((ds/2):ds:end,:);
 Xds = Xraw(1:dsX:end,:);
 
 % use previous <numwins> windows as features at each time 
-numwins = 5; % # of prev windows to use at each time
 X = zeros( size(Xds).*[1,numwins] - [numwins,0] );
 for t = 1:size(X,1)
     wins = Xds(t:(t+numwins-1),:);
